@@ -19,7 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function SignupProfessional() {
   const router = useRouter();
   const auth = getAuth();
-  const user = auth.currentUser!;
+  const user = auth.currentUser!; // if you want to be extra safe, guard on user
 
   const [name, setName]       = useState('');
   const [email, setEmail]     = useState('');
@@ -86,16 +86,35 @@ export default function SignupProfessional() {
           value={name}
           onChangeText={setName}
           placeholder="Your full name"
+          autoCapitalize="words"
+          autoCorrect={false}
+          /* want autofill for name? change the next 3 lines */
+          autoComplete="off"
+          textContentType="none"
+          importantForAutofill="no"
         />
 
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={styles.input}
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(t) => {
+            console.log('PRO EMAIL INPUT:', t); // debug -> remove later
+            setEmail(t);
+          }}
           autoCapitalize="none"
+          autoCorrect={false}
           keyboardType="email-address"
           placeholder="you@work.com"
+          /* TRY allowing autofill (common for email): */
+          autoComplete="email"
+          textContentType="emailAddress"
+          importantForAutofill="yes"
+          /* If this field turns yellow & locks, flip to: 
+             autoComplete=\"off\"
+             textContentType=\"none\"
+             importantForAutofill=\"no\"
+          */
         />
 
         <Text style={styles.label}>Phone</Text>
@@ -105,6 +124,11 @@ export default function SignupProfessional() {
           onChangeText={setPhone}
           keyboardType="phone-pad"
           placeholder="(555) 555-5555"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="tel"
+          textContentType="telephoneNumber"
+          importantForAutofill="yes"
         />
 
         <Text style={styles.label}>Company</Text>
@@ -113,6 +137,11 @@ export default function SignupProfessional() {
           value={company}
           onChangeText={setCompany}
           placeholder="Company name"
+          autoCapitalize="words"
+          autoCorrect={false}
+          autoComplete="off"
+          textContentType="none"
+          importantForAutofill="no"
         />
 
         <Text style={styles.label}>Job Title</Text>
@@ -121,6 +150,11 @@ export default function SignupProfessional() {
           value={title}
           onChangeText={setTitle}
           placeholder="Your role"
+          autoCapitalize="words"
+          autoCorrect={false}
+          autoComplete="off"
+          textContentType="none"
+          importantForAutofill="no"
         />
 
         <Pressable style={styles.primaryBtn} onPress={onSubmit}>

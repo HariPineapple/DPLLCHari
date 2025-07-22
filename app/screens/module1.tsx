@@ -1,5 +1,5 @@
 /* app/screens/module1.tsx */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Image,
@@ -11,52 +11,114 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getStorage, ref, listAll, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import {
+  getFirestore,
+  doc,
+  updateDoc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 export default function Module1() {
-  const [urls, setUrls] = useState<string[] | null>(null);
-  const { width, height } = useWindowDimensions();
+  const storage = getStorage();
+  const db = getFirestore();
+  const uid = getAuth().currentUser!.uid;
   const router = useRouter();
 
-  const storage = getStorage();
-  const db      = getFirestore();
-  const uid     = getAuth().currentUser!.uid;
+  const { width: winW, height: winH } = useWindowDimensions();
+  const { left: insetL, right: insetR } = useSafeAreaInsets();
+  const slideW = Math.round(winW - insetL - insetR);
+  const slideH = winH;
 
-  const moduleCount     = 2;     // total modules in your app
-  const slidesInModule  = urls?.length ?? 0;
+  const [urls, setUrls] = useState<string[] | null>(null);
   const [page, setPage] = useState(0);
+  const flatRef = useRef<FlatList<string>>(null);
 
-  // 1️⃣  Load all JPEG URLs
+  useEffect(() => {
+    ScreenOrientation.lockAsync(
+      ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT
+    ).catch(console.warn);
+
+    return () => {
+      ScreenOrientation.unlockAsync().catch(() => {
+        ScreenOrientation.lockAsync(
+          ScreenOrientation.OrientationLock.PORTRAIT_UP
+        ).catch(() => {});
+      });
+    };
+  }, []);
+
   useEffect(() => {
     const listRef = ref(storage, 'modules/module1');
     listAll(listRef)
-      .then(res =>
+      .then((res) =>
         Promise.all(
           res.items
             .sort((a, b) => {
-              // filenames like "module1_page-0001.jpg"
-              const num = (name: string) => {
-                const m = name.match(/_(\d+)\./);
+              const num = (n: string) => {
+                const m = n.match(/_(\d+)\./);
                 return m ? parseInt(m[1], 10) : 0;
               };
               return num(a.name) - num(b.name);
             })
-            .map(item => getDownloadURL(item))
+            .map((item) => getDownloadURL(item))
         )
       )
       .then(setUrls)
-      .catch(console.error);
+      .catch((err) => {
+        console.error('🔥 Firebase Storage Error:', err.code || err.name);
+        console.log('🧾 Full Error Payload:', JSON.stringify(err, null, 2));
+      });
   }, []);
 
-  // 2️⃣  When the user hits the last slide, mark completed
+  useEffect(() => {
+    if (!urls) return;
+
+    (async () => {
+      const progRef = doc(db, 'modulesProgress', uid);
+      const snap = await getDoc(progRef);
+
+      let saved = 0;
+      if (snap.exists()) {
+        const data: any = snap.data();
+        saved = data?.module1?.lastPage ?? 0;
+      }
+
+      saved = Math.min(Math.max(saved, 0), urls.length - 1);
+      setPage(saved);
+
+      setTimeout(() => {
+        flatRef.current?.scrollToOffset({ offset: saved * slideW, animated: false });
+      }, 0);
+    })();
+  }, [urls, slideW]);
+
   useEffect(() => {
     if (!urls || page !== urls.length - 1) return;
     const progRef = doc(db, 'modulesProgress', uid);
     updateDoc(progRef, { 'module1.completed': true }).catch(() => {});
+  }, [page, urls]);
+
+  useEffect(() => {
+    if (!urls) return;
+    const progRef = doc(db, 'modulesProgress', uid);
+    setDoc(
+      progRef,
+      {
+        module1: {
+          lastPage: page,
+          updatedAt: serverTimestamp(),
+        },
+      },
+      { merge: true }
+    ).catch(() => {});
   }, [page, urls]);
 
   if (!urls) {
@@ -67,38 +129,55 @@ export default function Module1() {
     );
   }
 
-  // 3️⃣  Compute overall percent across all modules
-  const overallPercent = Math.round(
-    ((page + 1) / (slidesInModule)) * 100
-  );
+  const overallPercent = Math.round(((page + 1) / urls.length) * 100);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Percent badge */}
       <View style={styles.percentWrap}>
         <Text style={styles.percentTxt}>{overallPercent}% complete</Text>
       </View>
 
-      {/* Slide deck */}
       <FlatList
+        ref={flatRef}
         data={urls}
         horizontal
-        pagingEnabled
-        keyExtractor={u => u}
-        onMomentumScrollEnd={e => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+        pagingEnabled={false}
+        snapToInterval={slideW}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        bounces={false}
+        keyExtractor={(u) => u}
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={{ paddingHorizontal: 0 }}
+        getItemLayout={(_, i) => ({
+          length: slideW,
+          offset: slideW * i,
+          index: i,
+        })}
+        onMomentumScrollEnd={(e) => {
+          const idx = Math.round(
+            e.nativeEvent.contentOffset.x / slideW
+          );
           setPage(idx);
         }}
         renderItem={({ item }) => (
-          <Image
-            source={{ uri: item }}
-            style={{ width, height: height * 0.8, resizeMode: 'contain' }}
-          />
+          <View
+            style={{
+              width: slideW,
+              height: slideH,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Image
+              source={{ uri: item }}
+              style={{ width: slideW, height: slideH, resizeMode: 'contain' }}
+            />
+          </View>
         )}
         showsHorizontalScrollIndicator={false}
       />
 
-      {/* Back button */}
       <Pressable style={styles.back} onPress={() => router.back()}>
         <Ionicons name="chevron-back-circle" size={36} color="#fff" />
       </Pressable>
@@ -107,8 +186,8 @@ export default function Module1() {
 }
 
 const styles = StyleSheet.create({
-  container:   { flex: 1, backgroundColor: '#000' },
-  center:      { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: '#000' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   percentWrap: {
     position: 'absolute',
     top: 40,
@@ -119,6 +198,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     zIndex: 10,
   },
-  percentTxt:  { color: '#fff', fontSize: 12, fontWeight: '600' },
-  back:        { position: 'absolute', top: 40, left: 16, zIndex: 10 },
+  percentTxt: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  back: { position: 'absolute', top: 40, left: 16, zIndex: 10 },
 });
