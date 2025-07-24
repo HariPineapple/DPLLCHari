@@ -1,15 +1,12 @@
-import React, { useEffect } from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from '@/lib/firebase';            // ← added
+import { router } from 'expo-router';
+import React from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function Watch() {
   // auto-skip if already logged in
-  useEffect(() => {
-    if (auth.currentUser) router.replace('/');
-  }, []);
+
 
   const finish = async () => {
     await AsyncStorage.setItem('onboarding_seen', 'true');
