@@ -1,35 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import React from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function Learn() {
   const router = useRouter();
-  const [checked, setChecked] = useState(false);   // false = auth not resolved yet
 
-  /* ───── one-time auth check ───── */
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, user => {
-      if (user) {
-        // signed-in → go straight to Home tab
-        router.replace('/');
-      } else {
-        // not signed-in → show onboarding
-        setChecked(true);
-      }
-    });
-    return unsub;
-  }, []);
-
-  // keep the splash / blank screen until we know auth state
-  if (!checked) return null;
-
-  /* ───── onboarding UI ───── */
   return (
     <View style={styles.container}>
-      {/* Skip */}
       <Pressable
         style={styles.skip}
         onPress={() => router.replace('/(auth)/signup')}
@@ -37,29 +15,23 @@ export default function Learn() {
         <Text style={styles.skipTxt}>Skip</Text>
       </Pressable>
 
-      {/* Illustration */}
       <Image
         source={require('../../assets/images/learn.png')}
         style={styles.image}
       />
 
-      {/* Copy */}
       <Text style={styles.title}>Self-Paced Learning Modules</Text>
       <Text style={styles.body}>
         Master demand-planning fundamentals through interactive lessons designed
         for your schedule
       </Text>
 
-      {/* Dots */}
       <Dots active={0} />
-
-      {/* Next */}
       <Arrow onPress={() => router.push('/(onboarding)/exercise')} />
     </View>
   );
 }
 
-/* ───── helper components ───── */
 function Dots({ active }: { active: 0 | 1 | 2 }) {
   return (
     <View style={{ flexDirection: 'row', gap: 8, marginTop: 24 }}>
@@ -87,7 +59,6 @@ function Arrow({ onPress }: { onPress: () => void }) {
   );
 }
 
-/* ───── styles ───── */
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,14 +1,10 @@
-import React, { useEffect } from 'react';
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { auth } from '@/lib/firebase';            // ← added
+import React from 'react';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 export default function Exercise() {
   // auto-skip if already logged in
-  useEffect(() => {
-    if (auth.currentUser) router.replace('/');
-  }, []);
 
   return (
     <View style={styles.container}>
