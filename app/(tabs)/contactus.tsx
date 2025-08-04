@@ -20,7 +20,6 @@ const companyInfo = {
   name:    'Valtitude / Demand Planning, LLC',
   address: '26 Henshaw Street, Woburn, MA 01801',
   phone:   '(781) 995-0685',
-  email:   'markc@valuechainplanning.com',
   site:    'https://demandplanning.net',
 };
 
@@ -77,7 +76,6 @@ export default function ContactUs() {
         <Info icon="business"  text={companyInfo.name}/>
         <Info icon="location"  text={companyInfo.address}/>
         <Info icon="call"      text={companyInfo.phone}  link={`tel:${companyInfo.phone}`}/>
-        <Info icon="mail"      text={companyInfo.email}  link={`mailto:${companyInfo.email}`}/>
         <Info icon="globe"     text={companyInfo.site.replace('https://', '')} link={companyInfo.site}/>
 
         {/* testimonials */}

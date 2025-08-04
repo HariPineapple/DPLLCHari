@@ -61,7 +61,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.page}>
         {/* ── Header ── */}
         <View style={styles.headerRow}>
-          <Text style={styles.brand}>Valitude</Text>
+          <Text style={styles.brand}>Valtitude</Text>
           <View style={styles.headerIcons}>
             <Ionicons name="notifications-outline" size={22} color="#111" />
             <Pressable onPress={() => router.push('/screens/profile')}>
@@ -91,7 +91,7 @@ export default function HomeScreen() {
         </View>
 
         {/* ── Continue card ── */}
-        <View style={styles.orangeCard}>
+        {/*<View style={styles.orangeCard}>
           <View style={{ flex: 1 }}>
             <Text style={styles.orangeLabel}>Continue Learning</Text>
             <Text style={styles.orangeTitle}>Forecast Accuracy</Text>
@@ -100,7 +100,7 @@ export default function HomeScreen() {
           <Pressable style={styles.continueBtn}>
             <Text style={styles.continueTxt}>Continue</Text>
           </Pressable>
-        </View>
+        </View>*/}
 
         {/* ── Flashcards block ── */}
         <Text style={styles.sectionTitle}>Flashcards</Text>
